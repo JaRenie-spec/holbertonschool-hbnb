@@ -1,25 +1,25 @@
-from app.persistence.repository import InMemoryRepository
 from app.models.user import User
 from app.models.amenity import Amenity
 from app.models.place import Place
 from app.models.review import Review
-
+from app.persistence.user_repository import UserRepository
+from app.persistence.repository import SQLAlchemyRepository
 
 class HBnBFacade:
     def __init__(self):
-        self.user_repo = InMemoryRepository()
-        self.place_repo = InMemoryRepository()
-        self.review_repo = InMemoryRepository()
-        self.amenity_repo = InMemoryRepository()
+        # Utiliser un repository dédié pour les Users
+        self.user_repo = UserRepository()
+        self.amenity_repo = SQLAlchemyRepository(Amenity)
+        self.place_repo = SQLAlchemyRepository(Place)
+        self.review_repo = SQLAlchemyRepository(Review)
 
     # ---------------------- USERS ----------------------
     def create_user(self, user_data):
-        # user_data should include: first_name, last_name, email, password, and optionally is_admin
-        existing = self.get_user_by_email(user_data["email"])
-        if existing:
+        # user_data doit contenir first_name, last_name, email, password et éventuellement is_admin
+        if self.get_user_by_email(user_data["email"]):
             raise ValueError("This email is already in use.")
 
-        user_obj = User(
+        user = User(
             first_name=user_data["first_name"],
             last_name=user_data["last_name"],
             email=user_data["email"],
@@ -27,10 +27,9 @@ class HBnBFacade:
         )
         if "password" not in user_data or not user_data["password"]:
             raise ValueError("Password is required.")
-
-        user_obj.hash_password(user_data["password"])
-        self.user_repo.add(user_obj)
-        return user_obj
+        user.hash_password(user_data["password"])
+        self.user_repo.add(user)
+        return user
 
     def get_user(self, user_id):
         return self.user_repo.get(user_id)
@@ -39,7 +38,7 @@ class HBnBFacade:
         return self.user_repo.get_all()
 
     def get_user_by_email(self, email):
-        return self.user_repo.get_by_attribute("email", email)
+        return self.user_repo.get_user_by_email(email)
 
     def update_user(self, user_id, data):
         user = self.user_repo.get(user_id)
@@ -50,7 +49,8 @@ class HBnBFacade:
         if "last_name" in data:
             user.last_name = data["last_name"]
         if "email" in data:
-            if self.get_user_by_email(data["email"]) and self.get_user_by_email(data["email"]).id != user_id:
+            existing_user = self.get_user_by_email(data["email"])
+            if existing_user and existing_user.id != user_id:
                 raise ValueError("Email is already in use.")
             user.email = data["email"]
         if "password" in data and data["password"]:
@@ -64,15 +64,11 @@ class HBnBFacade:
     def delete_user(self, user_id):
         return self.user_repo.delete(user_id)
 
-    def get_all_users(self):
-        return self.user_repo.get_all()
-
     # ---------------------- AMENITIES ----------------------
     def create_amenity(self, amenity_data):
         name = amenity_data.get("name", "")
         if not name or len(name) > 50:
-            raise ValueError(
-                "Invalid 'name': must be non-empty and ≤ 50 characters.")
+            raise ValueError("Invalid 'name': must be non-empty and ≤ 50 characters.")
         amenity_obj = Amenity(name=name)
         self.amenity_repo.add(amenity_obj)
         return amenity_obj
@@ -89,8 +85,7 @@ class HBnBFacade:
             return None
         if "name" in data:
             if not data["name"] or len(data["name"]) > 50:
-                raise ValueError(
-                    "Invalid 'name': must be non-empty and ≤ 50 characters.")
+                raise ValueError("Invalid 'name': must be non-empty and ≤ 50 characters.")
             amenity.name = data["name"]
         self.amenity_repo.update(amenity_id, amenity)
         return amenity
@@ -116,6 +111,7 @@ class HBnBFacade:
             longitude=place_data["longitude"],
             owner=owner
         )
+        # Relations avec amenities seront ajoutées plus tard
         place_obj.amenities = []
         if "amenities" in place_data:
             for amenity_id in place_data["amenities"]:
@@ -225,5 +221,5 @@ class HBnBFacade:
         return self.review_repo.delete(review_id)
 
 
-# Instantiate the global facade
+# Instanciation globale de la façade
 facade = HBnBFacade()

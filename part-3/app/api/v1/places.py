@@ -2,21 +2,21 @@ from flask_restx import Namespace, Resource, fields
 from flask import request
 from app.services import facade
 
-api = Namespace('places', description='Public Place operations')
+places_ns = Namespace('places', description='Public Place operations')
 
-amenity_model = api.model('PlaceAmenity', {
+amenity_model = places_ns.model('PlaceAmenity', {
     'id': fields.String(description='Amenity ID'),
     'name': fields.String(description='Name of the amenity')
 })
 
-user_model = api.model('PlaceUser', {
+user_model = places_ns.model('PlaceUser', {
     'id': fields.String(description='User ID'),
     'first_name': fields.String(description='First name of the owner'),
     'last_name': fields.String(description='Last name of the owner'),
     'email': fields.String(description='Email of the owner')
 })
 
-place_model = api.model('Place', {
+place_model = places_ns.model('Place', {
     'title': fields.String(required=True, description='Title of the place'),
     'description': fields.String(description='Description of the place'),
     'price': fields.Float(required=True, description='Price per night'),
@@ -27,11 +27,11 @@ place_model = api.model('Place', {
 })
 
 
-@api.route('/')
+@places_ns.route('/')
 class PlaceList(Resource):
-    @api.expect(place_model)
-    @api.response(201, 'Place successfully created')
-    @api.response(400, 'Invalid input data')
+    @places_ns.expect(place_model)
+    @places_ns.response(201, 'Place successfully created')
+    @places_ns.response(400, 'Invalid input data')
     def post(self):
         """
         Create a new place.
@@ -86,10 +86,10 @@ class PlaceList(Resource):
         return result, 200
 
 
-@api.route('/<place_id>')
+@places_ns.route('/<place_id>')
 class PlaceResource(Resource):
-    @api.response(200, 'Place details retrieved successfully')
-    @api.response(404, 'Place not found')
+    @places_ns.response(200, 'Place details retrieved successfully')
+    @places_ns.response(404, 'Place not found')
     def get(self, place_id):
         """
         Retrieve details of a place by its ID.
@@ -115,10 +115,10 @@ class PlaceResource(Resource):
         except ValueError:
             return {"message": "Place not found"}, 404
 
-    @api.expect(place_model)
-    @api.response(200, 'Place updated successfully')
-    @api.response(400, 'Invalid input data')
-    @api.response(404, 'Place not found')
+    @places_ns.expect(place_model)
+    @places_ns.response(200, 'Place updated successfully')
+    @places_ns.response(400, 'Invalid input data')
+    @places_ns.response(404, 'Place not found')
     def put(self, place_id):
         """
         Update a place's information.

@@ -4,7 +4,7 @@ from flask import request
 from functools import wraps
 from app.services import facade
 
-api = Namespace('admin', description='Administrator operations')
+admin_ns = Namespace('admin', description='Administrator operations')
 
 
 def admin_required(fn):
@@ -19,7 +19,7 @@ def admin_required(fn):
     return jwt_required()(wraps(fn)(wrapper))
 
 
-@api.route('/places/<place_id>')
+@admin_ns.route('/places/<place_id>')
 class AdminPlaceResource(Resource):
     @admin_required
     def put(self, place_id):
@@ -41,7 +41,7 @@ class AdminPlaceResource(Resource):
         }, 200
 
 
-@api.route('/amenities/')
+@admin_ns.route('/amenities/')
 class AdminAmenityResource(Resource):
     @admin_required
     def post(self):

@@ -3,10 +3,10 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services import facade
 from config import config
 
-api = Namespace('users', description='User operations')
+users_ns = Namespace('users', description='User operations')
 
 # Model for user registration
-user_model = api.model('User', {
+user_model = users_ns.model('User', {
     'first_name': fields.String(required=True, description='User first name'),
     'last_name': fields.String(required=True, description='User last name'),
     'email': fields.String(required=True, description='User email'),
@@ -15,17 +15,17 @@ user_model = api.model('User', {
 })
 
 
-@api.route('/')
+@users_ns.route('/')
 class UserList(Resource):
-    @api.expect(user_model, validate=True)
-    @api.response(201, 'User successfully created')
-    @api.response(400, 'Email already registered or invalid input data')
+    @users_ns.expect(user_model, validate=True)
+    @users_ns.response(201, 'User successfully created')
+    @users_ns.response(400, 'Email already registered or invalid input data')
     def post(self):
         """
         Self-registration: Create a new user.
         If "admin_secret" matches config['default'].ADMIN_SECRET, the user is created as an admin.
         """
-        user_data = api.payload
+        user_data = users_ns.payload
         existing_user = facade.get_user_by_email(user_data['email'])
         if existing_user:
             return {'error': 'Email already registered'}, 400
@@ -49,10 +49,10 @@ class UserList(Resource):
             return {'error': str(e)}, 400
 
 
-@api.route('/<user_id>')
+@users_ns.route('/<user_id>')
 class UserResource(Resource):
-    @api.response(200, 'User details retrieved successfully')
-    @api.response(404, 'User not found')
+    @users_ns.response(200, 'User details retrieved successfully')
+    @users_ns.response(404, 'User not found')
     def get(self, user_id):
         """
         Retrieve user details by ID.
@@ -68,11 +68,11 @@ class UserResource(Resource):
             'is_admin': user.is_admin
         }, 200
 
-    @api.expect(user_model)
-    @api.response(200, 'User updated successfully')
-    @api.response(404, 'User not found')
-    @api.response(400, 'Invalid input data')
-    @api.response(403, 'Unauthorized action')
+    @users_ns.expect(user_model)
+    @users_ns.response(200, 'User updated successfully')
+    @users_ns.response(404, 'User not found')
+    @users_ns.response(400, 'Invalid input data')
+    @users_ns.response(403, 'Unauthorized action')
     @jwt_required()
     def put(self, user_id):
         """
@@ -83,7 +83,7 @@ class UserResource(Resource):
         if current_user['id'] != user_id:
             return {'message': 'Unauthorized action'}, 403
 
-        user_data = api.payload
+        user_data = users_ns.payload
         user_data.pop('admin_secret', None)
         try:
             updated_user = facade.update_user(user_id, user_data)
@@ -99,9 +99,9 @@ class UserResource(Resource):
         except Exception as e:
             return {'error': str(e)}, 400
 
-    @api.response(200, 'User deleted successfully')
-    @api.response(404, 'User not found')
-    @api.response(403, 'Unauthorized action')
+    @users_ns.response(200, 'User deleted successfully')
+    @users_ns.response(404, 'User not found')
+    @users_ns.response(403, 'Unauthorized action')
     @jwt_required()
     def delete(self, user_id):
         """

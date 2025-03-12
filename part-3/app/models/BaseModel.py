@@ -1,28 +1,31 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
+from app import db
 
+class BaseModel(db.Model):
+    __abstract__ = True  # Empêche la création d'une table pour BaseModel
 
-class BaseModel:
-    """
-    Base class that provides:
-      - Unique ID (UUID)
-      - Timestamps (created_at, updated_at)
-      - Methods to update attributes and timestamps
-    """
-
-    def __init__(self):
-        self.id = str(uuid.uuid4())
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc)  # Date/heure "timezone-aware" en UTC
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     def save(self):
-        """Update the 'updated_at' timestamp when the object is modified."""
-        self.updated_at = datetime.now()
+        """
+        Met à jour le timestamp 'updated_at' lorsqu'un objet est modifié.
+        """
+        self.updated_at = datetime.now(timezone.utc)
 
     def update(self, data: dict):
         """
-        Update object attributes from a dictionary.
-        Also updates the 'updated_at' timestamp.
+        Met à jour les attributs de l'objet à partir d'un dictionnaire
+        et rafraîchit le timestamp 'updated_at'.
         """
         for key, value in data.items():
             if hasattr(self, key):

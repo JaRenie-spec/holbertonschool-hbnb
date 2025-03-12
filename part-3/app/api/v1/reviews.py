@@ -3,20 +3,20 @@ from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services import facade
 
-api = Namespace('reviews', description='Review operations')
+reviews_ns = Namespace('reviews', description='Review operations')
 
-review_model = api.model('Review', {
+review_model = reviews_ns.model('Review', {
     'text': fields.String(required=True, description='Review text'),
     'rating': fields.Integer(required=True, description='Rating for the place (1-5)'),
     'place_id': fields.String(required=True, description='ID of the place')
 })
 
 
-@api.route('/')
+@reviews_ns.route('/')
 class ReviewList(Resource):
-    @api.expect(review_model)
-    @api.response(201, 'Review successfully created')
-    @api.response(400, 'Invalid input data')
+    @reviews_ns.expect(review_model)
+    @reviews_ns.response(201, 'Review successfully created')
+    @reviews_ns.response(400, 'Invalid input data')
     @jwt_required()
     def post(self):
         """
@@ -39,7 +39,7 @@ class ReviewList(Resource):
         except Exception as e:
             return {'message': str(e)}, 400
 
-    @api.response(200, 'List of reviews retrieved successfully')
+    @reviews_ns.response(200, 'List of reviews retrieved successfully')
     def get(self):
         """
         Retrieve a list of all reviews.
@@ -57,10 +57,10 @@ class ReviewList(Resource):
         ], 200
 
 
-@api.route('/<review_id>')
+@reviews_ns.route('/<review_id>')
 class ReviewResource(Resource):
-    @api.response(200, 'Review details retrieved successfully')
-    @api.response(404, 'Review not found')
+    @reviews_ns.response(200, 'Review details retrieved successfully')
+    @reviews_ns.response(404, 'Review not found')
     def get(self, review_id):
         """
         Retrieve review details by ID.
@@ -76,10 +76,10 @@ class ReviewResource(Resource):
             }, 200
         return {'message': 'Review not found'}, 404
 
-    @api.expect(review_model)
-    @api.response(200, 'Review updated successfully')
-    @api.response(404, 'Review not found')
-    @api.response(400, 'Invalid input data')
+    @reviews_ns.expect(review_model)
+    @reviews_ns.response(200, 'Review updated successfully')
+    @reviews_ns.response(404, 'Review not found')
+    @reviews_ns.response(400, 'Invalid input data')
     @jwt_required()
     def put(self, review_id):
         """
@@ -111,9 +111,9 @@ class ReviewResource(Resource):
         except Exception as e:
             return {'message': str(e)}, 400
 
-    @api.response(200, 'Review deleted successfully')
-    @api.response(404, 'Review not found')
-    @api.response(403, 'Unauthorized action')
+    @reviews_ns.response(200, 'Review deleted successfully')
+    @reviews_ns.response(404, 'Review not found')
+    @reviews_ns.response(403, 'Unauthorized action')
     @jwt_required()
     def delete(self, review_id):
         """
