@@ -1,16 +1,16 @@
-from app.persistence.repository import InMemoryRepository
+from app.persistence.repository import SQLAlchemyRepository
 from app.models.user import User
 from app.models.amenity import Amenity
 from app.models.place import Place
 from app.models.review import Review
 
-
 class HBnBFacade:
     def __init__(self):
-        self.user_repo = InMemoryRepository()
-        self.place_repo = InMemoryRepository()
-        self.review_repo = InMemoryRepository()
-        self.amenity_repo = InMemoryRepository()
+        # Remplacement du repository en mémoire par SQLAlchemyRepository
+        self.user_repo = SQLAlchemyRepository(User)
+        self.place_repo = SQLAlchemyRepository(Place)
+        self.review_repo = SQLAlchemyRepository(Review)
+        self.amenity_repo = SQLAlchemyRepository(Amenity)
 
     def _user_to_dict(self, user_obj):
         if not user_obj:
@@ -56,21 +56,17 @@ class HBnBFacade:
         }
 
     def create_user(self, user_data):
-        # Vérifie l'unicité de l'email
         existing = self.get_user_by_email(user_data["email"])
         if existing:
             raise ValueError("This email is already in use.")
 
-        # Création de l'utilisateur avec les champs de base
         user_obj = User(
             first_name=user_data["first_name"],
             last_name=user_data["last_name"],
             email=user_data["email"]
         )
-        # Vérification de la présence d'un mot de passe
         if "password" not in user_data or not user_data["password"]:
             raise ValueError("Password is required.")
-        # Hachage du mot de passe avant de stocker l'utilisateur
         user_obj.hash_password(user_data["password"])
 
         self.user_repo.add(user_obj)
