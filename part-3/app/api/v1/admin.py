@@ -1,4 +1,4 @@
-from flask_restx import Namespace, Resource
+from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask import request
 from functools import wraps
@@ -7,6 +7,25 @@ from app.services import facade
 admin_ns = Namespace('admin', description='Administrator operations')
 
 
+# ----------------------
+# Models for Swagger UI
+# ----------------------
+user_model = api.model('UserCreate', {
+    'first_name': fields.String(required=True, description='First name'),
+    'last_name': fields.String(required=True, description='Last name'),
+    'email': fields.String(required=True, description='Email address'),
+    'password': fields.String(required=True, description='Password'),
+    'is_admin': fields.Boolean(required=True, description='Is admin user?')
+})
+
+amenity_model = api.model('AmenityCreate', {
+    'name': fields.String(required=True, description='Name of the amenity')
+})
+
+
+# ----------------------
+# Admin check decorator
+# ----------------------
 def admin_required(fn):
     @wraps(fn)
     @jwt_required()
@@ -18,8 +37,16 @@ def admin_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
-@admin_ns.route('/users/')
+
+### -------------------------
+### USERS (CREATE / UPDATE)
+### -------------------------
+@api.route('/users/')
 class AdminUserResource(Resource):
+    @api.expect(user_model)
+    @api.response(201, 'User created successfully')
+    @api.response(400, 'Invalid data')
+    @api.response(403, 'Admin access required')
     @admin_required
     def post(self):
         """
@@ -34,6 +61,9 @@ class AdminUserResource(Resource):
 
 @admin_ns.route('/users/<user_id>')
 class AdminUserUpdateResource(Resource):
+    @api.expect(user_model)
+    @api.response(200, 'User updated successfully')
+    @api.response(404, 'User not found')
     @admin_required
     def put(self, user_id):
         """
@@ -45,8 +75,21 @@ class AdminUserUpdateResource(Resource):
             return {'error': 'User not found'}, 404
         return {'message': 'User updated', 'user': updated_user.to_dict()}, 200
 
-@admin_ns.route('/places/<place_id>')
+
+### -------------------------
+### PLACES (UPDATE / DELETE)
+### -------------------------
+@api.route('/places/<place_id>')
 class AdminPlaceResource(Resource):
+    @api.expect(api.model('PlaceUpdate', {
+        'title': fields.String(description='Title'),
+        'description': fields.String(description='Description'),
+        'price': fields.Float(description='Price per night'),
+        'latitude': fields.Float(description='Latitude'),
+        'longitude': fields.Float(description='Longitude'),
+        'owner_id': fields.String(description='Owner ID'),
+        'amenities': fields.List(fields.String, description='List of amenity IDs')
+    }))
     @admin_required
     def put(self, place_id):
         """
@@ -75,7 +118,11 @@ class AdminPlaceResource(Resource):
             return {'error': 'Place not found'}, 404
         return {'message': 'Place deleted by admin'}, 200
 
-@admin_ns.route('/reviews/<review_id>')
+
+### -------------------------
+### REVIEWS (DELETE)
+### -------------------------
+@api.route('/reviews/<review_id>')
 class AdminReviewResource(Resource):
     @admin_required
     def delete(self, review_id):
@@ -87,8 +134,15 @@ class AdminReviewResource(Resource):
             return {'error': 'Review not found'}, 404
         return {'message': 'Review deleted by admin'}, 200
 
-@admin_ns.route('/amenities/')
+
+### -------------------------
+### AMENITIES (CREATE / UPDATE)
+### -------------------------
+@api.route('/amenities/')
 class AdminAmenityResource(Resource):
+    @api.expect(amenity_model)
+    @api.response(201, 'Amenity created successfully')
+    @api.response(403, 'Admin access required')
     @admin_required
     def post(self):
         """
@@ -96,4 +150,28 @@ class AdminAmenityResource(Resource):
         """
         data = request.json
         new_amenity = facade.create_amenity(data)
-        return {'message': 'Amenity created', 'amenity': {'id': new_amenity.id, 'name': new_amenity.name}}, 201
+        return {
+            'message': 'Amenity created',
+            'amenity': {
+                'id': new_amenity.id,
+                'name': new_amenity.name
+            }
+        }, 201
+
+
+@api.route('/amenities/<amenity_id>')
+class AdminAmenityUpdateResource(Resource):
+    @admin_required
+    def put(self, amenity_id):
+        """Admin-only update of an amenity."""
+        data = request.json
+        updated_amenity = facade.update_amenity(amenity_id, data)
+        if not updated_amenity:
+            return {'error': 'Amenity not found'}, 404
+        return {
+            'message': 'Amenity updated',
+            'amenity': {
+                'id': updated_amenity.id,
+                'name': updated_amenity.name
+            }
+        }, 200
