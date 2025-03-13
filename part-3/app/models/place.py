@@ -1,6 +1,14 @@
 from app import db
 from app.models.BaseModel import BaseModel
 
+# Association table for many-to-many relationship between Place and Amenity
+place_amenity = db.Table('place_amenity',
+                         db.Column('place_id', db.Integer, db.ForeignKey(
+                             'places.id'), primary_key=True),
+                         db.Column('amenity_id', db.Integer, db.ForeignKey(
+                             'amenities.id'), primary_key=True)
+                         )
+
 
 class Place(BaseModel):
     __tablename__ = 'places'
@@ -11,6 +19,10 @@ class Place(BaseModel):
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    reviews = db.relationship('Review', backref='place', lazy=True)
+    amenities = db.relationship('Amenity', secondary=place_amenity, lazy='subquery',
+                                backref=db.backref('places', lazy=True))
 
     """
     Place class.
@@ -58,10 +70,7 @@ class Place(BaseModel):
         self.price = price
         self.latitude = latitude
         self.longitude = longitude
-        self.owner = owner
-
-        self.reviews = []
-        self.amenities = []
+        self.owner_id = owner.id
 
     def add_review(self, review):
         """Adds a Review to the Place."""

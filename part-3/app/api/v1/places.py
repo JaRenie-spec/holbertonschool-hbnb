@@ -1,5 +1,6 @@
 from flask_restx import Namespace, Resource, fields
 from flask import request
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services import facade
 
 api = Namespace('places', description='Public Place operations')
@@ -26,7 +27,6 @@ place_model = api.model('Place', {
     'amenities': fields.List(fields.String, required=True, description="List of amenities ID's")
 })
 
-
 @api.route('/')
 class PlaceList(Resource):
     @api.expect(place_model)
@@ -36,7 +36,6 @@ class PlaceList(Resource):
         """
         Create a new place.
         - A normal user can specify owner_id, but ideally it should match the current user's ID.
-        - This endpoint remains as it was before.
         """
         place_data = request.json
         try:
@@ -60,6 +59,7 @@ class PlaceList(Resource):
         except ValueError as e:
             return {"message": str(e)}, 400
 
+    @api.response(200, 'List of places retrieved successfully')
     def get(self):
         """
         Retrieve a list of all places, including owner and amenities information.
@@ -85,8 +85,8 @@ class PlaceList(Resource):
             })
         return result, 200
 
-
-@api.route('/<place_id>')
+@api.route('/<string:place_id>')
+@api.param('place_id', 'The Place identifier')
 class PlaceResource(Resource):
     @api.response(200, 'Place details retrieved successfully')
     @api.response(404, 'Place not found')
@@ -122,7 +122,6 @@ class PlaceResource(Resource):
     def put(self, place_id):
         """
         Update a place's information.
-        This endpoint remains as before. Any logic for authentication can be added as needed.
         """
         place_data = request.json
         try:
@@ -149,3 +148,22 @@ class PlaceResource(Resource):
             return {"message": str(e)}, 400
         except Exception as e:
             return {"message": f"An error occurred: {e}"}, 500
+
+    @api.response(200, 'Place deleted successfully')
+    @api.response(404, 'Place not found')
+    @api.response(403, 'Admin access required')
+    @jwt_required()
+    def delete(self, place_id):
+        """
+        Delete a place by ID. (Admin only)
+        """
+        current_user_id = get_jwt_identity()
+        user = facade.get_user(current_user_id)
+        if not user or not getattr(user, "is_admin", False):
+            return {"error": "Admin access required"}, 403
+
+        success = facade.delete_place(place_id)
+        if success:
+            return {"message": "Place deleted successfully"}, 200
+        else:
+            return {"message": "Place not found"}, 404

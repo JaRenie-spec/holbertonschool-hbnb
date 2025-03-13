@@ -23,6 +23,9 @@ class User(BaseModel):
     password = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
 
+    places = db.relationship('Place', backref='owner', lazy=True)
+    reviews = db.relationship('Review', backref='author', lazy=True)
+
     existing_emails = set()
 
     def __init__(self, first_name, last_name, email, password, is_admin=False):
@@ -46,9 +49,6 @@ class User(BaseModel):
         self.is_admin = is_admin
 
         self.hash_password(password)
-
-        self.places = []
-        self.reviews = []
 
     def hash_password(self, password):
         """Hash the password before storing it."""

@@ -2,6 +2,7 @@ from app.persistence.repository import SQLAlchemyRepository
 from app.models.user import User
 from app.models.place import Place
 from app.models.review import Review
+from app.models.amenity import Amenity
 
 class HBnBFacade:
     def __init__(self):
@@ -18,7 +19,8 @@ class HBnBFacade:
             "id": user_obj.id,
             "first_name": user_obj.first_name,
             "last_name": user_obj.last_name,
-            "email": user_obj.email
+            "email": user_obj.email,
+            "is_admin": getattr(user_obj, 'is_admin', False)
         }
 
     def _amenity_to_dict(self, amenity_obj):
@@ -54,6 +56,7 @@ class HBnBFacade:
             "place_id": review_obj.place.id
         }
 
+    # USERS
     def create_user(self, user_data):
         existing = self.get_user_by_email(user_data["email"])
         if existing:
@@ -74,6 +77,9 @@ class HBnBFacade:
     def get_user(self, user_id):
         return self.user_repo.get(user_id)
 
+    def get_user_by_id(self, user_id):  # utilisé dans admin_required()
+        return self.get_user(user_id)
+
     def get_user_by_email(self, email):
         return self.user_repo.get_user_by_email(email)
 
@@ -84,6 +90,9 @@ class HBnBFacade:
     def update_user(self, user_id, user_data):
         user = self.get_user(user_id)
         if user:
+            if "password" in user_data:
+                user.hash_password(user_data["password"])
+                user_data.pop("password")
             for key, value in user_data.items():
                 setattr(user, key, value)
             self.user_repo.update(user)
@@ -94,14 +103,14 @@ class HBnBFacade:
         user = self.get_user(user_id)
         if user:
             self.user_repo.delete(user)
-            return user
-        return None
+            return True
+        return False
 
+    # AMENITIES
     def create_amenity(self, amenity_data):
         name = amenity_data.get("name", "")
         if not name or len(name) > 50:
-            raise ValueError(
-                "Invalid 'name': must be non-empty and ≤ 50 characters.")
+            raise ValueError("Invalid 'name': must be non-empty and ≤ 50 characters.")
         amenity_obj = Amenity(name=name)
         self.amenity_repo.add(amenity_obj)
         return amenity_obj
@@ -120,6 +129,14 @@ class HBnBFacade:
         self.amenity_repo.add(amenity)
         return amenity
 
+    def delete_amenity(self, amenity_id):
+        amenity = self.amenity_repo.get(amenity_id)
+        if amenity:
+            self.amenity_repo.delete(amenity)
+            return True
+        return False
+
+    # PLACES
     def create_place(self, place_data):
         if place_data["price"] < 0:
             raise ValueError("Price must be a non-negative value.")
@@ -140,25 +157,19 @@ class HBnBFacade:
             longitude=place_data["longitude"],
             owner=owner
         )
-        place_obj.amenities = [] if not hasattr(
-            place_obj, "amenities") else place_obj.amenities
+        place_obj.amenities = []
 
         if "amenities" in place_data:
-            amenities = []
             for amenity_id in place_data["amenities"]:
                 amenity_obj = self.amenity_repo.get(amenity_id)
                 if amenity_obj:
-                    amenities.append(amenity_obj)
-            place_obj.amenities = amenities
+                    place_obj.amenities.append(amenity_obj)
 
         self.place_repo.add(place_obj)
         return place_obj
 
     def get_place(self, place_id):
-        place = self.place_repo.get(place_id)
-        if not place:
-            raise ValueError("Place not found.")
-        return place
+        return self.place_repo.get(place_id)
 
     def get_all_places(self):
         return self.place_repo.get_all()
@@ -194,6 +205,14 @@ class HBnBFacade:
         self.place_repo.add(place)
         return place
 
+    def delete_place(self, place_id):
+        place = self.place_repo.get(place_id)
+        if place:
+            self.place_repo.delete(place)
+            return True
+        return False
+
+    # REVIEWS
     def create_review(self, review_data):
         required = ["text", "rating", "user_id", "place_id"]
         for field in required:
@@ -226,25 +245,24 @@ class HBnBFacade:
         return self.review_repo.get_all()
 
     def get_reviews_by_place(self, place_id):
-        all_reviews = self.review_repo.get_all()
-        return [r for r in all_reviews if r.place.id == place_id]
+        return [r for r in self.review_repo.get_all() if r.place.id == place_id]
 
     def update_review(self, review_id, data):
         review = self.review_repo.get(review_id)
         if not review:
             return None
-        if "rating" in data:
-            if not (1 <= data["rating"] <= 5):
-                raise ValueError("Rating must be between 1 and 5.")
+        if "rating" in data and not (1 <= data["rating"] <= 5):
+            raise ValueError("Rating must be between 1 and 5.")
         review.update(data)
         self.review_repo.add(review)
         return review
 
     def delete_review(self, review_id):
         review = self.review_repo.get(review_id)
-        if not review:
-            return None
-        return self.review_repo.delete(review_id)
+        if review:
+            self.review_repo.delete(review)
+            return True
+        return False
 
 
 facade = HBnBFacade()

@@ -13,20 +13,20 @@ login_model = api.model('Login', {
 
 @api.route('/login')
 class Login(Resource):
-    @api.expect(login_model)
+    @api.expect(login_model, validate=True)
+    @api.response(200, 'Login successful')
+    @api.response(401, 'Invalid credentials')
     def post(self):
-        """Authenticate user and return a JWT token"""
-        credentials = api.payload  # Get email and password from the request payload
-
-        # Retrieve the user based on the provided email
-        user = facade.get_user_by_email(credentials['email'])
-        if not user or not user.verify_password(credentials['password']):
-            return {'error': 'Invalid credentials'}, 401
-
-        # Create a JWT token with the user's id and is_admin flag
-        access_token = create_access_token(
-            identity={'id': str(user.id), 'is_admin': user.is_admin})
-        return {'access_token': access_token}, 200
+        """
+        User login.
+        """
+        login_data = api.payload
+        user = facade.get_user_by_email(login_data['email'])
+        if user and user.verify_password(login_data['password']):
+            access_token = create_access_token(
+                identity={'id': user.id, 'is_admin': user.is_admin})
+            return {'access_token': access_token}, 200
+        return {'message': 'Invalid credentials'}, 401
 
 
 @api.route('/protected')

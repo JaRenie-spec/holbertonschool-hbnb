@@ -8,76 +8,121 @@ api = Namespace('admin', description='Admin operations')
 
 
 def admin_required(fn):
-    """
-    Decorator to ensure the current user has admin privileges.
-    """
     @wraps(fn)
+    @jwt_required()
     def wrapper(*args, **kwargs):
-        current_user = get_jwt_identity()
-        if not current_user.get('is_admin'):
+        user_id = get_jwt_identity()
+        user = facade.get_user_by_id(user_id)
+        if not user or not user.is_admin:
             return {'error': 'Admin privileges required'}, 403
         return fn(*args, **kwargs)
     return wrapper
 
 
-@api.route('/users/<user_id>')
-class AdminUserResource(Resource):
-    @jwt_required()
-    @admin_required
-    def put(self, user_id):
-        """
-        Update any user's details (ADMIN ONLY).
-        """
-        data = request.json
-        if 'email' in data:
-            existing_user = facade.get_user_by_email(data['email'])
-            if existing_user and str(existing_user.id) != str(user_id):
-                return {'error': 'Email is already in use'}, 400
-
-        try:
-            updated_user = facade.update_user(user_id, data)
-            if not updated_user:
-                return {'error': 'User not found'}, 404
-            return {
-                'message': 'User updated successfully',
-                'user': updated_user.to_dict()
-            }, 200
-        except Exception as e:
-            return {'error': str(e)}, 500
-
-    @jwt_required()
-    @admin_required
-    def delete(self, user_id):
-        """
-        Delete any user account (ADMIN ONLY).
-        """
-        deleted_user = facade.delete_user(user_id)
-        if not deleted_user:
-            return {'error': 'User not found'}, 404
-        return {'message': 'User deleted successfully'}, 200
-
-
+### -------------------------
+### USERS (CREATE / UPDATE)
+### -------------------------
 @api.route('/users/')
-class AdminUserCreate(Resource):
-    @jwt_required()
+class AdminUserResource(Resource):
     @admin_required
     def post(self):
-        """
-        Create a new user (ADMIN ONLY).
-        The admin can set is_admin to True or False as needed.
-        """
+        """Admin can create a new user."""
         data = request.json
-        if 'email' not in data or 'password' not in data:
-            return {'error': 'Missing email or password'}, 400
-
-        if facade.get_user_by_email(data['email']):
-            return {'error': 'Email already registered'}, 400
-
         try:
-            user = facade.create_user(data)
-            return {
-                'message': 'User created',
-                'user': user.to_dict()
-            }, 201
+            new_user = facade.create_user(data)
+            return {'message': 'User created', 'user': new_user.to_dict()}, 201
         except Exception as e:
-            return {'error': str(e)}, 500
+            return {'error': str(e)}, 400
+
+
+@api.route('/users/<user_id>')
+class AdminUserUpdateResource(Resource):
+    @admin_required
+    def put(self, user_id):
+        """Admin can update any user."""
+        data = request.json
+        updated_user = facade.update_user(user_id, data)
+        if not updated_user:
+            return {'error': 'User not found'}, 404
+        return {'message': 'User updated', 'user': updated_user.to_dict()}, 200
+
+
+### -------------------------
+### PLACES (UPDATE / DELETE)
+### -------------------------
+@api.route('/places/<place_id>')
+class AdminPlaceResource(Resource):
+    @admin_required
+    def put(self, place_id):
+        """Admin can update any place regardless of ownership."""
+        data = request.json
+        updated_place = facade.update_place(place_id, data)
+        if not updated_place:
+            return {'error': 'Place not found'}, 404
+        return {
+            'message': 'Place updated by admin',
+            'place': {
+                'id': updated_place.id,
+                'title': updated_place.title,
+                'owner_id': updated_place.owner.id
+            }
+        }, 200
+
+    @admin_required
+    def delete(self, place_id):
+        """Admin can delete any place regardless of ownership."""
+        success = facade.delete_place(place_id)
+        if not success:
+            return {'error': 'Place not found'}, 404
+        return {'message': 'Place deleted by admin'}, 200
+
+
+### -------------------------
+### REVIEWS (DELETE)
+### -------------------------
+@api.route('/reviews/<review_id>')
+class AdminReviewResource(Resource):
+    @admin_required
+    def delete(self, review_id):
+        """Admin can delete any review regardless of ownership."""
+        success = facade.delete_review(review_id)
+        if not success:
+            return {'error': 'Review not found'}, 404
+        return {'message': 'Review deleted by admin'}, 200
+
+
+### -------------------------
+### AMENITIES (CREATE / UPDATE)
+### -------------------------
+@api.route('/amenities/')
+class AdminAmenityResource(Resource):
+    @admin_required
+    def post(self):
+        """Admin-only creation of an amenity."""
+        data = request.json
+        new_amenity = facade.create_amenity(data)
+        return {
+            'message': 'Amenity created',
+            'amenity': {
+                'id': new_amenity.id,
+                'name': new_amenity.name
+            }
+        }, 201
+
+
+@api.route('/amenities/<amenity_id>')
+class AdminAmenityUpdateResource(Resource):
+    @admin_required
+    def put(self, amenity_id):
+        """Admin-only update of an amenity."""
+        data = request.json
+        updated_amenity = facade.update_amenity(amenity_id, data)
+        if not updated_amenity:
+            return {'error': 'Amenity not found'}, 404
+        return {
+            'message': 'Amenity updated',
+            'amenity': {
+                'id': updated_amenity.id,
+                'name': updated_amenity.name
+            }
+        }, 200
