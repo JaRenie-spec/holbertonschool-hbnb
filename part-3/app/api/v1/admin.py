@@ -4,50 +4,80 @@ from flask import request
 from functools import wraps
 from app.services import facade
 
-api = Namespace('admin', description='Administrator operations')
+api = Namespace('admin', description='Admin operations')
 
 
 def admin_required(fn):
-    """Decorator to ensure the user is an admin."""
-    from flask_jwt_extended import get_jwt_identity
-
+    """
+    Decorator to ensure the current user has admin privileges.
+    """
+    @wraps(fn)
     def wrapper(*args, **kwargs):
         current_user = get_jwt_identity()
         if not current_user.get('is_admin'):
             return {'error': 'Admin privileges required'}, 403
         return fn(*args, **kwargs)
-    return jwt_required()(wraps(fn)(wrapper))
+    return wrapper
 
 
-@api.route('/places/<place_id>')
-class AdminPlaceResource(Resource):
+@api.route('/users/<user_id>')
+class AdminUserResource(Resource):
+    @jwt_required()
     @admin_required
-    def put(self, place_id):
+    def put(self, user_id):
         """
-        Admin can update any place regardless of ownership.
+        Update any user's details (ADMIN ONLY).
         """
         data = request.json
-        updated_place = facade.update_place(place_id, data)
-        if not updated_place:
-            return {'error': 'Place not found'}, 404
-        return {
-            'message': 'Place updated by admin',
-            'place': {
-                'id': updated_place.id,
-                'title': updated_place.title,
-                'owner_id': updated_place.owner.id
-                # Additional fields as needed
-            }
-        }, 200
+        if 'email' in data:
+            existing_user = facade.get_user_by_email(data['email'])
+            if existing_user and str(existing_user.id) != str(user_id):
+                return {'error': 'Email is already in use'}, 400
+
+        try:
+            updated_user = facade.update_user(user_id, data)
+            if not updated_user:
+                return {'error': 'User not found'}, 404
+            return {
+                'message': 'User updated successfully',
+                'user': updated_user.to_dict()
+            }, 200
+        except Exception as e:
+            return {'error': str(e)}, 500
+
+    @jwt_required()
+    @admin_required
+    def delete(self, user_id):
+        """
+        Delete any user account (ADMIN ONLY).
+        """
+        deleted_user = facade.delete_user(user_id)
+        if not deleted_user:
+            return {'error': 'User not found'}, 404
+        return {'message': 'User deleted successfully'}, 200
 
 
-@api.route('/amenities/')
-class AdminAmenityResource(Resource):
+@api.route('/users/')
+class AdminUserCreate(Resource):
+    @jwt_required()
     @admin_required
     def post(self):
         """
-        Admin-only creation of an amenity.
+        Create a new user (ADMIN ONLY).
+        The admin can set is_admin to True or False as needed.
         """
         data = request.json
-        new_amenity = facade.create_amenity(data)
-        return {'message': 'Amenity created', 'amenity': {'id': new_amenity.id, 'name': new_amenity.name}}, 201
+        if 'email' not in data or 'password' not in data:
+            return {'error': 'Missing email or password'}, 400
+
+        if facade.get_user_by_email(data['email']):
+            return {'error': 'Email already registered'}, 400
+
+        try:
+            user = facade.create_user(data)
+            return {
+                'message': 'User created',
+                'user': user.to_dict()
+            }, 201
+        except Exception as e:
+            return {'error': str(e)}, 500
