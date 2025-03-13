@@ -18,7 +18,7 @@ def admin_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
-@api.route('/users/')
+@admin_ns.route('/users/')
 class AdminUserResource(Resource):
     @admin_required
     def post(self):
@@ -32,7 +32,7 @@ class AdminUserResource(Resource):
         except Exception as e:
             return {'error': str(e)}, 400
 
-@api.route('/users/<user_id>')
+@admin_ns.route('/users/<user_id>')
 class AdminUserUpdateResource(Resource):
     @admin_required
     def put(self, user_id):
@@ -44,7 +44,6 @@ class AdminUserUpdateResource(Resource):
         if not updated_user:
             return {'error': 'User not found'}, 404
         return {'message': 'User updated', 'user': updated_user.to_dict()}, 200
-
 
 @admin_ns.route('/places/<place_id>')
 class AdminPlaceResource(Resource):
@@ -66,6 +65,7 @@ class AdminPlaceResource(Resource):
                 # Additional fields as needed
             }
         }, 200
+
     def delete(self, place_id):
         """
         Admin can delete any place regardless of ownership.
@@ -74,6 +74,10 @@ class AdminPlaceResource(Resource):
         if not success:
             return {'error': 'Place not found'}, 404
         return {'message': 'Place deleted by admin'}, 200
+
+@admin_ns.route('/reviews/<review_id>')
+class AdminReviewResource(Resource):
+    @admin_required
     def delete(self, review_id):
         """
         Admin can delete any review regardless of ownership.
@@ -82,7 +86,6 @@ class AdminPlaceResource(Resource):
         if not success:
             return {'error': 'Review not found'}, 404
         return {'message': 'Review deleted by admin'}, 200
-
 
 @admin_ns.route('/amenities/')
 class AdminAmenityResource(Resource):
