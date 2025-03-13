@@ -4,7 +4,7 @@ from flask import request
 from functools import wraps
 from app.services import facade
 
-api = Namespace('admin', description='Administrator operations')
+api = Namespace('admin', description='Admin operations')
 
 
 # ----------------------

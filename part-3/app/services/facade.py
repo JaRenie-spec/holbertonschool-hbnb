@@ -1,7 +1,4 @@
-from app.services.repositories.user_repository import UserRepository
-from app.services.repositories.place_repository import PlaceRepository
-from app.services.repositories.review_repository import ReviewRepository
-from app.services.repositories.amenity_repository import AmenityRepository
+from app.persistence.repository import SQLAlchemyRepository
 from app.models.user import User
 from app.models.place import Place
 from app.models.review import Review
@@ -9,10 +6,11 @@ from app.models.amenity import Amenity
 
 class HBnBFacade:
     def __init__(self):
-        self.user_repo = UserRepository()
-        self.place_repo = PlaceRepository()
-        self.review_repo = ReviewRepository()
-        self.amenity_repo = AmenityRepository()
+        # Remplacement du repository en mémoire par SQLAlchemyRepository
+        self.user_repo = SQLAlchemyRepository(User)
+        self.place_repo = SQLAlchemyRepository(Place)
+        self.review_repo = SQLAlchemyRepository(Review)
+        self.amenity_repo = SQLAlchemyRepository(Amenity)
 
     def _user_to_dict(self, user_obj):
         if not user_obj:
@@ -60,10 +58,21 @@ class HBnBFacade:
 
     # USERS
     def create_user(self, user_data):
-        user = User(**user_data)
-        user.hash_password(user_data['password'])
-        self.user_repo.add(user)
-        return user
+        existing = self.get_user_by_email(user_data["email"])
+        if existing:
+            raise ValueError("This email is already in use.")
+
+        user_obj = User(
+            first_name=user_data["first_name"],
+            last_name=user_data["last_name"],
+            email=user_data["email"]
+        )
+        if "password" not in user_data or not user_data["password"]:
+            raise ValueError("Password is required.")
+        user_obj.hash_password(user_data["password"])
+
+        self.user_repo.add(user_obj)
+        return user_obj
 
     def get_user(self, user_id):
         return self.user_repo.get(user_id)
