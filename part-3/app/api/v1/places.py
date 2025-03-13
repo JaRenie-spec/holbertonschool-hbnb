@@ -27,6 +27,7 @@ place_model = api.model('Place', {
     'amenities': fields.List(fields.String, required=True, description="List of amenities ID's")
 })
 
+
 @api.route('/')
 class PlaceList(Resource):
     @api.expect(place_model)
@@ -85,6 +86,7 @@ class PlaceList(Resource):
             })
         return result, 200
 
+
 @api.route('/<string:place_id>')
 @api.param('place_id', 'The Place identifier')
 class PlaceResource(Resource):
@@ -94,26 +96,26 @@ class PlaceResource(Resource):
         """
         Retrieve details of a place by its ID.
         """
-        try:
-            p = facade.get_place(place_id)
-            return {
-                "id": p.id,
-                "title": p.title,
-                "description": p.description,
-                "price": p.price,
-                "latitude": p.latitude,
-                "longitude": p.longitude,
-                "owner_id": p.owner.id,
-                "owner": {
-                    "id": p.owner.id,
-                    "first_name": p.owner.first_name,
-                    "last_name": p.owner.last_name,
-                    "email": p.owner.email
-                },
-                "amenities": [{"id": a.id, "name": a.name} for a in p.amenities]
-            }, 200
-        except ValueError:
+        p = facade.get_place(place_id)
+        if not p:
             return {"message": "Place not found"}, 404
+
+        return {
+            "id": p.id,
+            "title": p.title,
+            "description": p.description,
+            "price": p.price,
+            "latitude": p.latitude,
+            "longitude": p.longitude,
+            "owner_id": p.owner.id,
+            "owner": {
+                "id": p.owner.id,
+                "first_name": p.owner.first_name,
+                "last_name": p.owner.last_name,
+                "email": p.owner.email
+            },
+            "amenities": [{"id": a.id, "name": a.name} for a in p.amenities]
+        }, 200
 
     @api.expect(place_model)
     @api.response(200, 'Place updated successfully')

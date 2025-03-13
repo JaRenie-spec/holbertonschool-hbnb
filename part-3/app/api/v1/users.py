@@ -121,7 +121,10 @@ class UserResource(Resource):
         if current_user['id'] != user_id:
             return {'message': 'Unauthorized action'}, 403
 
-        deleted_user = facade.delete_user(user_id)
-        if not deleted_user:
-            return {'error': 'User not found'}, 404
-        return {'message': 'User deleted successfully'}, 200
+        try:
+            deleted_user = facade.delete_user(user_id)
+            if not deleted_user:
+                return {'error': 'User not found'}, 404
+            return {'message': 'User deleted successfully'}, 200
+        except Exception as e:
+            return {'error': f'Error deleting user: {str(e)}'}, 500

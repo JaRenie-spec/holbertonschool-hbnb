@@ -102,6 +102,13 @@ class HBnBFacade:
     def delete_user(self, user_id):
         user = self.get_user(user_id)
         if user:
+            # Supprime d'abord les places et critiques associées
+            for place in user.places:
+                self.place_repo.delete(place)
+            for review in user.reviews:
+                self.review_repo.delete(review)
+
+            # Puis supprime l'utilisateur
             self.user_repo.delete(user)
             return True
         return False

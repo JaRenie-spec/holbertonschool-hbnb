@@ -25,7 +25,11 @@ class Login(Resource):
         if user and user.verify_password(login_data['password']):
             access_token = create_access_token(
                 identity={'id': user.id, 'is_admin': user.is_admin})
-            return {'access_token': access_token}, 200
+            return {
+                'access_token': access_token,
+                'token_type': 'Bearer',  # Indique le type de token
+                'expires_in': 3600  # Expiration du token (optionnel)
+            }, 200
         return {'message': 'Invalid credentials'}, 401
 
 
