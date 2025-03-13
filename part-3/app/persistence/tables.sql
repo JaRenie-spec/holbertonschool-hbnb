@@ -1,3 +1,5 @@
+--- SQL scripts for table generation and initial data
+
 CREATE TABLE IF NOT EXISTS users (
     id CHAR(36) PRIMARY KEY,
     first_name VARCHAR(255),

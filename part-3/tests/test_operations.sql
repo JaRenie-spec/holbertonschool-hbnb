@@ -1,3 +1,6 @@
+-- test sql scripts
+
+
 -- Insert a test place
 INSERT INTO places (id, title, description, price, latitude, longitude, owner_id)
 VALUES
