@@ -3,11 +3,9 @@ from app.models.BaseModel import BaseModel
 
 # Association table for many-to-many relationship between Place and Amenity
 place_amenity = db.Table('place_amenity',
-                         db.Column('place_id', db.Integer, db.ForeignKey(
-                             'places.id'), primary_key=True),
-                         db.Column('amenity_id', db.Integer, db.ForeignKey(
-                             'amenities.id'), primary_key=True)
-                         )
+    db.Column('place_id', db.String(36), db.ForeignKey('places.id'), primary_key=True),
+    db.Column('amenity_id', db.String(36), db.ForeignKey('amenities.id'), primary_key=True)
+)
 
 
 class Place(BaseModel):
@@ -18,12 +16,30 @@ class Place(BaseModel):
     price = db.Column(db.Float, nullable=False)
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
+<<<<<<< HEAD
     owner_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
 
     owner = db.relationship('User', back_populates='places', lazy=True)
     reviews = db.relationship('Review', back_populates='place', lazy=True)
     amenities = db.relationship('Amenity', secondary=place_amenity, lazy='subquery',
                                 backref=db.backref('places', lazy=True))
+=======
+
+    # Clé étrangère vers la table users
+    owner_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+
+    # Relation directe : permet de faire place.owner pour accéder à l'objet User
+    owner = db.relationship('User', backref='places', lazy=True)
+
+    # Relation vers Review et Amenity
+    reviews = db.relationship('Review', backref='place', lazy=True)
+    amenities = db.relationship(
+        'Amenity',
+        secondary=place_amenity,
+        lazy='subquery',
+        backref=db.backref('places', lazy=True)
+    )
+>>>>>>> e35d0c03a6263cf5b9530db45ede520c656c85c9
 
     """
     Place class.
@@ -31,47 +47,53 @@ class Place(BaseModel):
       - id (from BaseModel)
       - title: Required, max 100 characters
       - description: Optional
-      - price: Float, must be positive
-      - latitude: Must be between -90 and 90
-      - longitude: Must be between -180 and 180
-      - owner: User who owns the place
+      - price: Float, must be >= 0
+      - latitude: must be in [-90, 90]
+      - longitude: must be in [-180, 180]
+      - owner_id: foreign key to the users table
+      - owner: User object (relationship)
       - reviews: List of associated reviews
       - amenities: List of associated amenities
-
-    Validation:
-      - title must be non-empty and ≤ 100 characters
-      - price must be >= 0
-      - latitude must be in range [-90, 90]
-      - longitude must be in range [-180, 180]
     """
 
     def __init__(self, title, description, price, latitude, longitude, owner):
+        """
+        Initialise un objet Place.
+        Le paramètre 'owner' doit être une instance de User.
+        """
         super().__init__()
 
+        # Validation du titre
         if not title or len(title) > 100:
             raise ValueError(
-                "Invalid 'title': must be non-empty and ≤ 100 characters.")
+                "Invalid 'title': must be non-empty and ≤ 100 characters."
+            )
 
+        # Validation du prix
         if price < 0:
             raise ValueError("Invalid 'price': must be a positive number.")
 
+        # Validation de la latitude
         if not (-90 <= latitude <= 90):
             raise ValueError("Invalid 'latitude': must be between -90 and 90.")
 
+        # Validation de la longitude
         if not (-180 <= longitude <= 180):
-            raise ValueError(
-                "Invalid 'longitude': must be between -180 and 180.")
+            raise ValueError("Invalid 'longitude': must be between -180 and 180.")
 
-        from .user import User
+        # Validation du propriétaire (owner)
+        from .user import User  # Import local pour éviter les import circulaires
         if not isinstance(owner, User):
             raise TypeError("Expected 'owner' to be an instance of User.")
 
+        # Affectation des champs
         self.title = title
         self.description = description
         self.price = price
         self.latitude = latitude
         self.longitude = longitude
-        self.owner_id = owner.id
+        self.owner_id = owner.id  # l'ID de l'utilisateur
+        # SQLAlchemy gérera automatiquement self.owner grâce à la relation
 
     def add_review(self, review):
         """Adds a Review to the Place."""

@@ -23,8 +23,13 @@ class User(BaseModel):
     password = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
 
+<<<<<<< HEAD
     places = db.relationship('Place', back_populates='owner', lazy=True)
     reviews = db.relationship('Review', back_populates='user', lazy=True, cascade='all, delete')
+=======
+    reviews = db.relationship('Review', backref='user', lazy=True, cascade='all, delete')
+
+>>>>>>> e35d0c03a6263cf5b9530db45ede520c656c85c9
     existing_emails = set()
 
     def __init__(self, first_name, last_name, email, password, is_admin=False):

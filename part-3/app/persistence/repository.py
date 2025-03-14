@@ -14,7 +14,7 @@ class Base:
 
 
 class BaseModel(db.Model):
-    __abstract__ = True  # This ensures SQLAlchemy does not create a table for BaseModel
+    __abstract__ = True  # SQLAlchemy ne crée pas de table pour BaseModel
 
     id = db.Column(db.String(36), primary_key=True,
                    default=lambda: str(uuid.uuid4()))
@@ -36,12 +36,13 @@ class Repository(ABC):
     def get_all(self):
         pass
 
+    # Modification : on attend une instance
     @abstractmethod
-    def update(self, obj_id, data):
+    def update(self, instance):
         pass
 
     @abstractmethod
-    def delete(self, obj_id):
+    def delete(self, instance):
         pass
 
     @abstractmethod
