@@ -10,6 +10,9 @@ class Review(BaseModel):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     place_id = db.Column(db.Integer, db.ForeignKey(
         'places.id'), nullable=False)
+
+    user = db.relationship('User', back_populates='reviews', lazy=True)
+    place = db.relationship('Place', back_populates='reviews', lazy=True)
     """
     Review class.
     Attributes:

@@ -11,7 +11,7 @@ class UserRepository:
         db.session.commit()
 
     def get(self, user_id):
-        return self.model.query.get(user_id)
+        return db.session.get(self.model, user_id)
 
     def get_all(self):
         return self.model.query.all()

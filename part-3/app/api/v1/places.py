@@ -154,12 +154,12 @@ class PlaceResource(Resource):
     @api.response(403, 'Admin access required')
     @jwt_required()
     def delete(self, place_id):
-        """
-        Delete a place by ID. (Admin only)
-        """
         current_user_id = get_jwt_identity()
         user = facade.get_user(current_user_id)
-        if not user or not getattr(user, "is_admin", False):
+        if not user:
+            return {"message": "User not found or invalid JWT identity"}, 401
+
+        if not getattr(user, "is_admin", False):
             return {"error": "Admin access required"}, 403
 
         success = facade.delete_place(place_id)
