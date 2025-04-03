@@ -52,7 +52,3 @@ VALUES
     ('fbd74c6e-96c5-4c8b-9b88-cbba7279f8eb', 'WiFi'),
     ('3b5b6799-e3f1-47b7-bd8c-b7a0ed9f52b2', 'Swimming Pool'),
     ('fe80c9f3-b423-46ca-a60c-b2f5ca010d8e', 'Air Conditioning');
-
-
-
-

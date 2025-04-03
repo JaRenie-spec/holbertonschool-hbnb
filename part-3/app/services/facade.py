@@ -118,7 +118,8 @@ class HBnBFacade:
         name = amenity_data.get("name", "")
         if not name or len(name) > 50:
             raise ValueError("Invalid 'name': must be non-empty and ≤ 50 characters.")
-        amenity_obj = Amenity(name=name)
+        owner_id = amenity_data.get("owner_id")
+        amenity_obj = Amenity(name=name, owner_id=owner_id)
         self.amenity_repo.add(amenity_obj)
         return amenity_obj
 

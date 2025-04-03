@@ -1,5 +1,27 @@
 from abc import ABC, abstractmethod
 from app import db
+from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.ext.declarative import as_declarative, declared_attr
+import uuid
+from datetime import datetime
+
+
+@as_declarative()
+class Base:
+    @declared_attr
+    def __tablename__(cls):
+        return cls.__name__.lower()
+
+
+class BaseModel(db.Model):
+    __abstract__ = True  # SQLAlchemy ne crée pas de table pour BaseModel
+
+    id = db.Column(db.String(36), primary_key=True,
+                   default=lambda: str(uuid.uuid4()))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 
 class Repository(ABC):
     @abstractmethod
@@ -14,12 +36,13 @@ class Repository(ABC):
     def get_all(self):
         pass
 
+    # Modification : on attend une instance
     @abstractmethod
-    def update(self, obj_id, data):
+    def update(self, instance):
         pass
 
     @abstractmethod
-    def delete(self, obj_id):
+    def delete(self, instance):
         pass
 
     @abstractmethod

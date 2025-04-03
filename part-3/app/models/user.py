@@ -23,7 +23,7 @@ class User(BaseModel):
     password = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
 
-    reviews = db.relationship('Review', backref='author', lazy=True, cascade='all, delete')
+    reviews = db.relationship('Review', backref='user', lazy=True, cascade='all, delete')
 
     existing_emails = set()
 

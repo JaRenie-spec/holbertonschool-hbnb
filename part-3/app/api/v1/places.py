@@ -33,11 +33,16 @@ class PlaceList(Resource):
     @api.expect(place_model)
     @api.response(201, 'Place successfully created')
     @api.response(400, 'Invalid input data')
+    @jwt_required()
     def post(self):
         """
         Create a new place.
-        - A normal user can specify owner_id, but ideally it should match the current user's ID.
         """
+        current_user = get_jwt_identity()
+        user = facade.get_user(current_user['id'])
+        if not user:
+            return {"message": "User not found"}, 400
+
         place_data = request.json
         try:
             place_obj = facade.create_place(place_data)
@@ -121,10 +126,16 @@ class PlaceResource(Resource):
     @api.response(200, 'Place updated successfully')
     @api.response(400, 'Invalid input data')
     @api.response(404, 'Place not found')
+    @jwt_required()
     def put(self, place_id):
         """
         Update a place's information.
         """
+        current_user = get_jwt_identity()
+        user = facade.get_user(current_user['id'])
+        if not user:
+            return {"message": "User not found"}, 400
+
         place_data = request.json
         try:
             updated = facade.update_place(place_id, place_data)
@@ -157,12 +168,23 @@ class PlaceResource(Resource):
     @jwt_required()
     def delete(self, place_id):
         """
-        Delete a place by ID. (Admin only)
+        Delete a place by ID.
+        The owner of the place or an admin can delete it.
         """
-        current_user_id = get_jwt_identity()
-        user = facade.get_user(current_user_id)
-        if not user or not getattr(user, "is_admin", False):
-            return {"error": "Admin access required"}, 403
+        current_user = get_jwt_identity(
+        )  # renvoie un dict, ex: {'id': '...', 'is_admin': True/False}
+        user = facade.get_user(current_user['id'])
+        if not user:
+            return {"error": "User not found"}, 400
+
+        # Récupère la place pour vérifier le propriétaire
+        place_obj = facade.get_place(place_id)
+        if not place_obj:
+            return {"message": "Place not found"}, 404
+
+        # Vérifie si l'utilisateur est admin ou le propriétaire de la place
+        if not (user.is_admin or (place_obj.owner.id == current_user['id'])):
+            return {"error": "Unauthorized action"}, 403
 
         success = facade.delete_place(place_id)
         if success:

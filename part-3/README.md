@@ -69,12 +69,6 @@ The application now consists of the following layers:
 | POST | `/api/v1/places/` | Create a new place (authenticated) |
 | PUT | `/api/v1/reviews/<review_id>` | Update a review (authenticated) |
 
-### 🛡️ Admin-Only Endpoints
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/admin/users` | Retrieve all users |
-| PUT | `/api/v1/admin/users/<user_id>` | Modify a user’s role |
-
 ---
 
 ## 💡 Example Usage
@@ -127,10 +121,10 @@ Authorization: Bearer <access_token>
 ## 🚀 Future Enhancements
 ---
 
-- Refresh tokens and logout
+- Refresh tokens
 - Password reset functionality
-- User profile update endpoints
-- Rate limiting and advanced logging
+- dynamic database update
+- enhance security
 
 ---
 
