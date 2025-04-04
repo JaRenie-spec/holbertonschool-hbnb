@@ -38,7 +38,6 @@ class Login(Resource):
         login_data = api.payload
         user = facade.get_user_by_email(login_data['email'])
         if user and user.verify_password(login_data['password']):
-<<<<<<< HEAD
             access_token = create_access_token(identity={'id': user.id, 'is_admin': user.is_admin})
             refresh_token = create_refresh_token(identity={'id': user.id, 'is_admin': user.is_admin})
             return {
@@ -48,14 +47,6 @@ class Login(Resource):
                 'refresh_token': refresh_token,
                 'user_id': user.id,
                 'is_admin': user.is_admin
-=======
-            access_token = create_access_token(
-                identity={'id': user.id, 'is_admin': user.is_admin})
-            return {
-                'access_token': access_token,
-                'token_type': 'Bearer',  # Indique le type de token
-                'expires_in': 3600  # Expiration du token (optionnel)
->>>>>>> e35d0c03a6263cf5b9530db45ede520c656c85c9
             }, 200
         return {'message': 'Invalid credentials'}, 401
 
