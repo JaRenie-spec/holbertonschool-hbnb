@@ -23,7 +23,6 @@ class UserList(Resource):
     def post(self):
         """
         Self-registration: Create a new user.
-        If "admin_secret" matches DevelopmentConfig.ADMIN_SECRET, the user is created as an admin.
         """
         user_data = api.payload
         admin_secret = user_data.pop('admin_secret', None)
@@ -85,8 +84,7 @@ class UserResource(Resource):
     @jwt_required()
     def put(self, user_id):
         """
-        Update a user's own details.
-        The authenticated user must match the user_id.
+        Update an user's own details.
         """
         current_user = get_jwt_identity()
         if current_user['id'] != user_id and not current_user.get('is_admin', False):
@@ -113,9 +111,7 @@ class UserResource(Resource):
     @jwt_required()
     def delete(self, user_id):
         """
-        Delete a user account.
-        A user can delete their own account.
-        (For admin deletion of any user, use the admin endpoint.)
+        Delete an user account.
         """
         current_user = get_jwt_identity()
         if current_user['id'] != user_id and not current_user.get('is_admin', False):

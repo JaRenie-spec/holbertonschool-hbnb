@@ -37,7 +37,6 @@ class PlaceList(Resource):
     def post(self):
         """
         Create a new place.
-        - A normal user can specify owner_id, but ideally it should match the current user's ID.
         """
         current_user = get_jwt_identity()
         user = facade.get_user(current_user['id'])

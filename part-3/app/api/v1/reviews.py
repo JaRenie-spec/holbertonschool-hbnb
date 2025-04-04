@@ -21,7 +21,6 @@ class ReviewList(Resource):
     def post(self):
         """
         Create a new review.
-        The authenticated user is automatically set as the author.
         """
         current_user = get_jwt_identity()
         data = request.json
@@ -84,7 +83,6 @@ class ReviewResource(Resource):
     def put(self, review_id):
         """
         Update a review's information.
-        The author or an admin can update the review.
         """
         current_user = get_jwt_identity()
         review_obj = facade.get_review(review_id)
@@ -118,7 +116,6 @@ class ReviewResource(Resource):
     def delete(self, review_id):
         """
         Delete a review.
-        The author or an admin can delete the review.
         """
         current_user = get_jwt_identity()
         review_obj = facade.get_review(review_id)
