@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Place Details</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <a href="index.html" id="logo-link"><img src="./images/logo.png" alt="Logo" class="logo"></a>
+        <nav>
+            <a href="login.html" class="login-button">Login</a>
+        </nav>
+    </header>
+    <main>
+        <section id="place-details">
+            <!-- Place details will be populated dynamically -->
+        </section>
+
+        <section id="reviews">
+            <h3>Reviews</h3>
+
+            <div class="review">
+                <p>"This place is fantastic! The view was stunning, and the staff was friendly." - <strong>John Doe</strong></p>
+                <span class="rating" data-rating="5"></span>
+            </div>
+
+            <div class="review">
+                <p>"Had a great experience! Clean rooms and amazing facilities." - <strong>Jane Smith</strong></p>
+                <span class="rating" data-rating="4"></span>
+            </div>
+        </section>
+
+        <section id="add-review">
+            <h2>Add a Review</h2>
+            <form id="review-form">
+                <label for="review-text">Review:</label>
+                <textarea id="review-text" name="review-text" required></textarea>
+
+                <label for="rating">Rating:</label>
+                <select id="rating" name="rating" required>
+                    <option value="1">1 - ★☆☆☆☆</option>
+                    <option value="2">2 - ★★☆☆☆</option>
+                    <option value="3">3 - ★★★☆☆</option>
+                    <option value="4">4 - ★★★★☆</option>
+                    <option value="5">5 - ★★★★★</option>
+                </select>
+
+                <button type="submit">Submit</button>
+            </form>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 All Rights Reserved</p>
+    </footer>
+    <script src="scripts.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Define place data
+            const places = {
+                place1: {
+                    name: 'Place 1',
+                    description: 'fine cottage. This place is amazing for tourists and has a lot to offer.',
+                    address: '123 Example Street, City, Country',
+                    price: '$100 per night',
+                    image: 'place1.jpg',
+                    rating: 5 // Rating for this place
+                },
+                place2: {
+                    name: 'Place 2',
+                    description: 'Detailed description of Place 2. Great for families and has plenty of space for relaxation.',
+                    address: '456 Another St, City, Country',
+                    price: '$150 per night',
+                    image: 'place2.jpg',
+                    rating: 4 // Rating for this place
+                },
+                place3: {
+                    name: 'Place 3',
+                    description: 'Detailed description of Place 3. A beautiful location with easy access to nearby attractions.',
+                    address: '789 Some Road, City, Country',
+                    price: '$120 per night',
+                    image: 'place3.jpg',
+                    rating: 3 // Rating for this place
+                }
+            };
+
+            // Get the place ID from the URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const placeId = urlParams.get('place'); // Example: place=place1
+
+            // Get the details of the place based on the URL parameter
+            const placeDetails = places[placeId];
+
+            if (placeDetails) {
+                // Populate the place details section
+                const placeDetailsSection = document.getElementById('place-details');
+                placeDetailsSection.innerHTML = `
+                    <div class="place-item">
+                        <img src="${placeDetails.image}" alt="${placeDetails.name}">
+                        <h2>${placeDetails.name}</h2>
+                        <p>${placeDetails.description}</p>
+                        <p>Address: ${placeDetails.address}</p>
+                        <p>Price: ${placeDetails.price}</p>
+                        <p>Rating: <span class="rating" data-rating="${placeDetails.rating}"></span></p>
+                    </div>
+                `;
+
+                // Handle the display of stars for rating
+                const ratingElements = document.querySelectorAll('.rating');
+                ratingElements.forEach((ratingElement) => {
+                    const rating = ratingElement.getAttribute('data-rating');
+                    let stars = '';
+                    for (let i = 0; i < 5; i++) {
+                        if (i < rating) {
+                            stars += '★'; // Filled star
+                        } else {
+                            stars += '☆'; // Empty star
+                        }
+                    }
+                    ratingElement.innerHTML = stars;
+                });
+            } else {
+                // Handle case where the place is not found
+                const placeDetailsSection = document.getElementById('place-details');
+                placeDetailsSection.innerHTML = `<p>Place not found.</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
