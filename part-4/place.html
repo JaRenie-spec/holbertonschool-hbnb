@@ -7,32 +7,27 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Header Section -->
     <header>
         <a href="index.html" id="logo-link"><img src="./images/logo.png" alt="Logo" class="logo"></a>
         <nav>
             <a href="login.html" class="login-button">Login</a>
         </nav>
     </header>
-    <main>
-        <section id="place-details">
-            <!-- Place details will be populated dynamically -->
-        </section>
 
+    <!-- Main Content Section -->
+    <main>
+        <!-- Place details will be populated dynamically -->
+        <section id="place-details"></section>
+
+        <!-- Reviews Section -->
         <section id="reviews">
             <h3>Reviews</h3>
-
-            <div class="review">
-                <p>"This place is fantastic! The view was stunning, and the staff was friendly." - <strong>John Doe</strong></p>
-                <span class="rating" data-rating="5"></span>
-            </div>
-
-            <div class="review">
-                <p>"Had a great experience! Clean rooms and amazing facilities." - <strong>Jane Smith</strong></p>
-                <span class="rating" data-rating="4"></span>
-            </div>
+            <!-- Dynamic review content will be added here -->
         </section>
 
-        <section id="add-review">
+        <!-- Add Review Section -->
+        <section id="add-review" style="display: none;">
             <h2>Add a Review</h2>
             <form id="review-form">
                 <label for="review-text">Review:</label>
@@ -51,82 +46,169 @@
             </form>
         </section>
     </main>
+
+    <!-- Footer Section -->
     <footer>
         <p>&copy; 2025 All Rights Reserved</p>
     </footer>
+
+    <!-- Include External Scripts -->
     <script src="scripts.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Define place data
-            const places = {
-                place1: {
-                    name: 'Place 1',
-                    description: 'fine cottage. This place is amazing for tourists and has a lot to offer.',
-                    address: '123 Example Street, City, Country',
-                    price: '$100 per night',
-                    image: 'place1.jpg',
-                    rating: 5 // Rating for this place
-                },
-                place2: {
-                    name: 'Place 2',
-                    description: 'Detailed description of Place 2. Great for families and has plenty of space for relaxation.',
-                    address: '456 Another St, City, Country',
-                    price: '$150 per night',
-                    image: 'place2.jpg',
-                    rating: 4 // Rating for this place
-                },
-                place3: {
-                    name: 'Place 3',
-                    description: 'Detailed description of Place 3. A beautiful location with easy access to nearby attractions.',
-                    address: '789 Some Road, City, Country',
-                    price: '$120 per night',
-                    image: 'place3.jpg',
-                    rating: 3 // Rating for this place
-                }
-            };
+            // Vérifier l'authentification et afficher les sections appropriées
+            checkAuthentication();
 
-            // Get the place ID from the URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const placeId = urlParams.get('place'); // Example: place=place1
-
-            // Get the details of the place based on the URL parameter
-            const placeDetails = places[placeId];
-
-            if (placeDetails) {
-                // Populate the place details section
-                const placeDetailsSection = document.getElementById('place-details');
-                placeDetailsSection.innerHTML = `
-                    <div class="place-item">
-                        <img src="${placeDetails.image}" alt="${placeDetails.name}">
-                        <h2>${placeDetails.name}</h2>
-                        <p>${placeDetails.description}</p>
-                        <p>Address: ${placeDetails.address}</p>
-                        <p>Price: ${placeDetails.price}</p>
-                        <p>Rating: <span class="rating" data-rating="${placeDetails.rating}"></span></p>
-                    </div>
-                `;
-
-                // Handle the display of stars for rating
-                const ratingElements = document.querySelectorAll('.rating');
-                ratingElements.forEach((ratingElement) => {
-                    const rating = ratingElement.getAttribute('data-rating');
-                    let stars = '';
-                    for (let i = 0; i < 5; i++) {
-                        if (i < rating) {
-                            stars += '★'; // Filled star
-                        } else {
-                            stars += '☆'; // Empty star
-                        }
-                    }
-                    ratingElement.innerHTML = stars;
-                });
-            } else {
-                // Handle case where the place is not found
-                const placeDetailsSection = document.getElementById('place-details');
-                placeDetailsSection.innerHTML = `<p>Place not found.</p>`;
+            // Récupérer l'ID du lieu à partir de l'URL
+            const placeId = getPlaceIdFromURL();
+            if (placeId) {
+                // Récupérer les détails du lieu
+                const token = getCookie('token');
+                fetchPlaceDetails(token); // Appel pour récupérer les détails
             }
         });
+
+        // Fonction pour récupérer l'ID du lieu à partir de l'URL
+        function getPlaceIdFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('place');  // Par exemple, place=place1
+        }
+
+        // Fonction pour récupérer un cookie par son nom
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        // Fonction pour vérifier l'authentification de l'utilisateur
+        function checkAuthentication() {
+            const token = getCookie('token');
+            const loginLink = document.querySelector('.login-button');
+            const addReviewSection = document.getElementById('add-review');
+
+            if (loginLink) {
+                if (!token) {
+                    loginLink.style.display = 'block';
+                    addReviewSection.style.display = 'none';  // Masquer la section d'avis si non authentifié
+                } else {
+                    loginLink.style.display = 'none';
+                    addReviewSection.style.display = 'block'; // Afficher la section si authentifié
+                }
+            }
+        }
+
+        // Fonction pour récupérer les détails d'un lieu depuis l'API
+        async function fetchPlaceDetails(token) {
+            const placeId = getPlaceIdFromURL();
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/api/v1/places/${placeId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': token ? `Bearer ${token}` : '', // Utilisation du token si connecté
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    const place = await response.json();
+                    displayPlaceDetails(place);  // Afficher les détails du lieu
+                } else {
+                    console.error('Failed to fetch place details');
+                }
+            } catch (error) {
+                console.error('Error fetching place details:', error);
+            }
+        }
+
+        // Fonction pour afficher les détails du lieu
+        function displayPlaceDetails(place) {
+            const placeDetailsSection = document.getElementById('place-details');
+            placeDetailsSection.innerHTML = '';  // Vider les détails actuels
+
+            const placeDiv = document.createElement('div');
+            placeDiv.classList.add('place-item');
+
+            placeDiv.innerHTML = `
+                <img src="${place.imageUrl}" alt="${place.name}">
+                <h2>${place.name}</h2>
+                <p>${place.description}</p>
+                <p>Address: ${place.address || 'N/A'}</p>
+                <p>Price: $${place.price}</p>
+                <p>Amenities: ${place.amenities ? place.amenities.join(', ') : 'N/A'}</p>
+                <p>Rating: <span class="rating" data-rating="${place.rating || 0}"></span></p>
+            `;
+
+            placeDetailsSection.appendChild(placeDiv);
+
+            // Gérer l'affichage des étoiles pour la note
+            const ratingElements = document.querySelectorAll('.rating');
+            ratingElements.forEach((ratingElement) => {
+                const rating = ratingElement.getAttribute('data-rating');
+                let stars = '';
+                for (let i = 0; i < 5; i++) {
+                    if (i < rating) {
+                        stars += '★'; // Étoile remplie
+                    } else {
+                        stars += '☆'; // Étoile vide
+                    }
+                }
+                ratingElement.innerHTML = stars;
+            });
+
+            // Affichage des avis
+            displayReviews(place.reviews || []);
+        }
+
+        // Fonction pour afficher les avis
+        function displayReviews(reviews) {
+            const reviewsSection = document.getElementById('reviews');
+            reviews.forEach(review => {
+                const reviewDiv = document.createElement('div');
+                reviewDiv.classList.add('review');
+                reviewDiv.innerHTML = `
+                    <p>"${review.text}" - <strong>${review.user}</strong></p>
+                    <span class="rating" data-rating="${review.rating}"></span>
+                `;
+                reviewsSection.appendChild(reviewDiv);
+
+                // Affichage des étoiles pour chaque avis
+                const ratingElement = reviewDiv.querySelector('.rating');
+                let stars = '';
+                for (let i = 0; i < 5; i++) {
+                    if (i < review.rating) {
+                        stars += '★'; // Étoile remplie
+                    } else {
+                        stars += '☆'; // Étoile vide
+                    }
+                }
+                ratingElement.innerHTML = stars;
+            });
+        }
+
+        // Gestion du formulaire d'avis
+        const reviewForm = document.getElementById('review-form');
+        if (reviewForm) {
+            reviewForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const reviewText = document.getElementById('review-text').value;
+                const ratingValue = document.getElementById('rating').value;
+
+                const newReview = document.createElement('div');
+                newReview.classList.add('review');
+                newReview.innerHTML = `
+                    <p>"${reviewText}" - <strong>Anonymous</strong></p>
+                    <span class="rating" data-rating="${ratingValue}"></span>
+                `;
+
+                document.getElementById('reviews').appendChild(newReview);
+
+                // Clear form after submission
+                reviewForm.reset();
+            });
+        }
     </script>
 </body>
 </html>
