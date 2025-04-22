@@ -1,251 +1,306 @@
-document.addEventListener('DOMContentLoaded', () => {
-    checkAuthentication();
-
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            await loginUser(email, password);
-        });
-    }
-
-    const priceFilter = document.getElementById('price-filter');
-    if (priceFilter) {
-        const priceOptions = [10, 50, 100, 200, 'all'];
-        priceOptions.forEach((price) => {
-            const option = document.createElement('option');
-            option.value = price;
-            option.textContent = price === 'all' ? 'All' : `$${price}`;
-            priceFilter.appendChild(option);
-        });
-
-        priceFilter.addEventListener('change', () => {
-            filterPlacesByPrice();
-        });
-    }
-
-    const placeId = getPlaceIdFromURL();
-    const token = getCookie('token');
-    if (placeId) {
-        fetchPlaceDetails(token);
-    } else {
-        if (document.getElementById('places-list')) {
-            fetchPlaces(token);
-        }
-    }
-});
-
-function getPlaceIdFromURL() {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('place');
-}
-
+/**
+ * Récupère la valeur d'un cookie
+ */
 function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
+    const cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      const [key, value] = cookie.trim().split("=");
+      if (key === name) return value;
+    }
     return null;
-}
+  }
 
-function checkAuthentication() {
-    const token = getCookie('token');
-    const loginLink = document.querySelector('.login-button');
-    const addReviewSection = document.getElementById('add-review');
+  /**
+   * Affichage des boutons Login et Logout
+   */
+  function updateAuthButtons() {
+    const token = getCookie("token");
+    const loginLink = document.getElementById("login-link");
+    const logoutBtn = document.getElementById("logout-button");
 
-    if (loginLink) {
-        if (!token) {
-            loginLink.style.display = 'block';
-            if (addReviewSection) addReviewSection.style.display = 'none';
-        } else {
-            loginLink.style.display = 'none';
-            if (addReviewSection) addReviewSection.style.display = 'block';
-        }
+    if (token) {
+      if (loginLink) loginLink.style.display = "none";
+      if (logoutBtn) logoutBtn.style.display = "inline-block";
+    } else {
+      if (loginLink) loginLink.style.display = "block";
+      if (logoutBtn) logoutBtn.style.display = "none";
     }
-}
+  }
 
-async function loginUser(email, password) {
-    try {
-        const response = await fetch('http://127.0.0.1:5000/api/v1/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password }),
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const token = data.access_token;
-            document.cookie = `token=${token}; path=/`;
-            window.location.href = 'index.html';
-        } else {
-            const errorData = await response.json();
-            alert('Login failed: ' + errorData.message);
-        }
-    } catch (error) {
-        console.error('Error during login:', error);
-        alert('Login failed: ' + error.message);
+  /**
+   * Logout : supprime le cookie et redirige vers login
+   */
+  function initLogout() {
+    const logoutBtn = document.getElementById("logout-button");
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", () => {
+        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        window.location.href = "login.html";
+      });
     }
-}
+  }
 
-async function fetchPlaces(token) {
+  /**
+   * Affiche la liste des lieux et configure le filtre
+   */
+  async function fetchPlaces() {
     try {
-        const response = await fetch('http://127.0.0.1:5000/api/v1/places', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
+      const token = getCookie("token");
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = "Bearer " + token;
 
-        if (!response.ok) throw new Error('Failed to fetch places');
+      const response = await fetch("http://127.0.0.1:5000/api/v1/places/", {
+        method: "GET",
+        headers,
+        credentials: "include",
+      });
+      if (response.ok) {
         const places = await response.json();
-        if (!places || places.length === 0) {
-            displayPlaces(getTestPlaces());
-        } else {
-            displayPlaces(places);
-        }
-    } catch (error) {
-        console.error('Error fetching places:', error);
-        displayPlaces(getTestPlaces());
+        displayPlaces(places);
+      } else {
+        console.error("Erreur fetchPlaces:", response.statusText);
+      }
+    } catch (err) {
+      console.error("Erreur fetchPlaces:", err);
     }
-}
+  }
 
-function displayPlaces(places) {
-    const placesList = document.getElementById('places-list');
-    placesList.innerHTML = '';
-    const token = getCookie('token');
+  function displayPlaces(places) {
+    const list = document.getElementById("places-list");
+    if (!list) return;
+    list.innerHTML = "";
 
     places.forEach((place) => {
-        const placeDiv = document.createElement('div');
-        placeDiv.classList.add('place-item');
+      const card = document.createElement("div");
+      card.className = "place-card";
+      card.setAttribute("data-price", place.price);
 
-        const buttonHTML = `<button class="view-details" onclick="viewDetails('${place.id}')">View Details</button>`;
-
-        placeDiv.innerHTML = `
-            <img src="${place.imageUrl}" alt="${place.name}">
-            <h3>${place.name}</h3>
-            <p>${place.description}</p>
-            <p class="price">$${place.price} per night</p>
-            ${buttonHTML}
-        `;
-        placesList.appendChild(placeDiv);
+      card.innerHTML = `
+        <h3>${place.title}</h3>
+        <p>Price: $${place.price} per night</p>
+        <p>${place.description}</p>
+        <button class="btn" onclick="viewDetails('${place.id}')">View Details</button>
+      `;
+      list.appendChild(card);
     });
-}
+  }
 
-function filterPlacesByPrice() {
-    const priceFilter = document.getElementById('price-filter');
-    const selectedPrice = priceFilter.value;
-    const placesList = document.getElementById('places-list');
-    const placeItems = placesList.getElementsByClassName('place-item');
+  function viewDetails(placeId) {
+    window.location.href = `place.html?id=${placeId}`;
+  }
 
-    Array.from(placeItems).forEach((place) => {
-        const priceText = place.querySelector('.price').textContent;
-        const price = parseInt(priceText.replace('$', '').replace(' per night', ''));
-        if (selectedPrice === 'all' || price <= parseInt(selectedPrice)) {
-            place.style.display = 'block';
-        } else {
-            place.style.display = 'none';
-        }
-    });
-}
+  function initPriceFilter() {
+    const filter = document.getElementById("price-filter");
+    if (filter) {
+      filter.addEventListener("change", (event) => {
+        const max = event.target.value;
+        document.querySelectorAll(".place-card").forEach((card) => {
+          const price = parseFloat(card.getAttribute("data-price"));
+          card.style.display =
+            max === "All" || price <= parseFloat(max) ? "block" : "none";
+        });
+      });
+    }
+  }
 
-async function fetchPlaceDetails(token) {
+  function getPlaceIdFromURL() {
+    return new URLSearchParams(window.location.search).get("id");
+  }
+
+  async function fetchPlaceDetails() {
+    const token = getCookie("token");
     const placeId = getPlaceIdFromURL();
     try {
-        const response = await fetch(`http://127.0.0.1:5000/api/v1/places/${placeId}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': token ? `Bearer ${token}` : '',
-                'Content-Type': 'application/json',
-            },
-        });
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = "Bearer " + token;
 
-        if (response.ok) {
-            const place = await response.json();
-            displayPlaceDetails(place);
-        } else {
-            console.error('Failed to fetch place details');
-        }
-    } catch (error) {
-        console.error('Error fetching place details:', error);
+      const res = await fetch(`http://127.0.0.1:5000/api/v1/places/${placeId}`, {
+        method: "GET",
+        headers,
+      });
+      if (!res.ok) throw new Error(res.statusText);
+      const place = await res.json();
+      displayPlaceDetails(place);
+      loadReviews(placeId);
+    } catch (err) {
+      console.error("Erreur fetchPlaceDetails:", err);
     }
-}
+  }
 
-function getTestPlaces() {
-    return [
-        {
-            id: 'place1',
-            name: 'Cozy Cottage',
-            description: 'A beautiful cozy cottage perfect for a peaceful retreat.',
-            price: 120,
-            imageUrl: 'place1.jpg'
+  function displayPlaceDetails(place) {
+    document.getElementById("place-name").textContent = place.title;
+    document.getElementById(
+      "place-host"
+    ).textContent = `Host: ${place.owner.first_name} ${place.owner.last_name}`;
+    document.getElementById("place-price").textContent = `Price: $${place.price}`;
+    document.getElementById(
+      "place-description"
+    ).textContent = `Description: ${place.description}`;
+
+    const icons = {
+      wifi: "<img src='./images/icon_wifi.png' alt='Wifi' style='height:20px;'>",
+      bathroom:
+        "<img src='./images/icon_bath.png' alt='Bathroom' style='height:20px;'>",
+      bed: "<img src='./images/icon_bed.png' alt='Bed' style='height:20px;'>",
+    };
+    const amenEl = document.getElementById("place-amenities");
+    if (place.amenities.length === 0) {
+      amenEl.textContent = "Amenities: None";
+    } else {
+      const html = place.amenities
+        .map((a) => {
+          const key = a.name.toLowerCase().trim();
+          const img = icons[key] || "";
+          return `${img} ${a.name}`;
+        })
+        .join(" | ");
+
+      amenEl.innerHTML = "Amenities: " + html;
+    }
+
+    document.getElementById("place-image").src =
+      place.image || "https://www.costas-casas.fr/db/huizen/1357/123765-2_57.jpg";
+  }
+
+  async function loadReviews(placeId) {
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/v1/reviews/");
+      if (!res.ok) throw new Error(res.statusText);
+      const all = await res.json();
+      const reviews = all.filter((r) => r.place_id === placeId);
+
+      const container = document.getElementById("reviews");
+      container.innerHTML = "<h3>Reviews</h3>";
+      if (reviews.length === 0) {
+        container.innerHTML += "<p>No reviews yet.</p>";
+      } else {
+        reviews.forEach((r) => {
+          const el = document.createElement("article");
+          el.className = "review-card";
+          el.innerHTML = `<p>"${r.text}"</p><p>Rating: ${r.rating}/5</p>`;
+          container.appendChild(el);
+        });
+      }
+    } catch (err) {
+      console.error("Erreur loadReviews:", err);
+    }
+  }
+
+  function initAddReviewButton() {
+    const btn = document.getElementById("add-review-button");
+    if (!btn) return;
+    const token = getCookie("token");
+    const placeId = getPlaceIdFromURL();
+    btn.addEventListener("click", () => {
+      if (token) {
+        window.location.href = `add_review.html?id=${placeId}`;
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+  }
+
+  /**
+   * Stocke le token et redirige.
+   */
+  async function loginUser(email, password) {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const token = data.access_token || data.token;
+        document.cookie = `token=${token}; path=/;`;
+        document.getElementById("login-message").textContent =
+          "Connexion réussie ! Redirection…";
+        setTimeout(() => (window.location.href = "index.html"), 1000);
+      } else {
+        document.getElementById("error-message").textContent =
+          "Login failed: " + response.statusText;
+        document.getElementById("error-message").style.display = "block";
+      }
+    } catch (err) {
+      console.error("Erreur loginUser:", err);
+      document.getElementById("error-message").textContent =
+        "Une erreur est survenue lors du login.";
+      document.getElementById("error-message").style.display = "block";
+    }
+  }
+
+  /**
+   * ADD REVIEW PAGE Accessible uniquement si login
+   */
+  async function submitReview() {
+    const token = getCookie("token");
+    const placeId = getPlaceIdFromURL();
+    const text = document.getElementById("review").value;
+    const rating = parseInt(document.getElementById("rating").value, 10);
+
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/v1/reviews/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
         },
-        {
-            id: 'place2',
-            name: 'Urban Loft',
-            description: 'Modern loft in the heart of the city.',
-            price: 200,
-            imageUrl: 'place2.jpg'
-        },
-        {
-            id: 'place3',
-            name: 'Mountain Cabin',
-            description: 'Secluded cabin in the mountains for a nature getaway.',
-            price: 95,
-            imageUrl: 'place3.jpg'
-        },
-        {
-            id: 'place4',
-            name: 'Cheap Tent',
-            description: 'Budget-friendly tent for a camping experience.',
-            price: 45,
-            imageUrl: 'place4.jpg'
-        },
-        {
-            id: 'place5',
-            name: 'Luxury Villa',
-            description: 'Spacious villa with a private pool and luxury amenities.',
-            price: 280,
-            imageUrl: 'place5.jpg'
-        }
-    ];
-}
+        body: JSON.stringify({ text, rating, place_id: placeId }),
+      });
+      if (res.ok) {
+        alert("Review submitted successfully!");
+        document.getElementById("review-form").reset();
+      } else {
+        alert("Failed to submit review.");
+      }
+    } catch (err) {
+      console.error("Erreur submitReview:", err);
+      alert("Erreur lors de l'envoi de l'avis.");
+    }
+  }
 
-function displayPlaceDetails(place) {
-    const placeDetailsSection = document.getElementById('place-details');
-    placeDetailsSection.innerHTML = '';
+  /**
+   * Initialisation
+   */
+  document.addEventListener("DOMContentLoaded", () => {
+    updateAuthButtons();
+    initLogout();
 
-    const placeDiv = document.createElement('div');
-    placeDiv.classList.add('place-item');
+    if (document.body.id === "index-page") {
+      fetchPlaces();
+      initPriceFilter();
+    }
 
-    const amenities = Array.isArray(place.amenities) ? place.amenities.join(', ') : 'N/A';
-    const reviewsHTML = Array.isArray(place.reviews) && place.reviews.length > 0 ?
-        place.reviews.map(review => `
-            <div class="review">
-                <p>"${review.text}" - <strong>${review.user}</strong></p>
-                <span class="rating">${'★'.repeat(review.rating)}</span>
-            </div>
-        `).join('') : '<p>No reviews available</p>';
+    if (document.body.id === "place-page") {
+      fetchPlaceDetails();
+      initAddReviewButton();
+    }
 
-    placeDiv.innerHTML = `
-        <img src="${place.imageUrl}" alt="${place.name}">
-        <h2>${place.name}</h2>
-        <p>${place.description}</p>
-        <p>Price: $${place.price}</p>
-        <p>Amenities: ${amenities}</p>
-        <div id="reviews">
-            <h3>Reviews</h3>
-            ${reviewsHTML}
-        </div>
-    `;
+    const loginForm = document.getElementById("login-form");
+    if (loginForm) {
+      loginForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        loginUser(
+          document.getElementById("email").value,
+          document.getElementById("password").value
+        );
+      });
+    }
 
-    placeDetailsSection.appendChild(placeDiv);
-}
-
-function viewDetails(placeId) {
-    window.location.href = `place.html?place=${placeId}`;
-}
-
+    if (document.body.id === "add-review-page") {
+      const token = getCookie("token");
+      if (!token) {
+        window.location.href = "login.html";
+        return;
+      }
+      const reviewForm = document.getElementById("review-form");
+      if (reviewForm) {
+        reviewForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          submitReview();
+        });
+      }
+    }
+  });

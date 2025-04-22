@@ -1,47 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Review</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Review</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <header>
-        <img src="./images/logo.png" alt="Logo" class="logo">
-        <nav>
-            <a href="login.html" class="login-button">Login</a>
-            <a href="index.html" id="logo-link"></a>
-        </nav>
-    </header>
+<body id="add-review-page">
+  <header>
+    <img src="./images/logo.png" alt="Logo" class="logo">
+    <nav>
+      <a href="index.html" class="login-button">Home</a>
+      <a href="login.html" class="login-button" id="login-link">Login</a>
+      <button id="logout-button" class="btn" style="display: none; margin-left: 1rem;">
+        Logout
+      </button>
+    </nav>
+  </header>
 
-    <main>
-        <form id="review-form">
-            <h2>Add a Review</h2>
+  <main>
+    <section class="add-review">
+      <h2>Add a Review for: Cozy Cottage</h2>
+      <form id="review-form">
+        <label for="review">Your Review:</label>
+        <textarea id="review" name="review" required></textarea>
 
-            <!-- Your review text area -->
-            <label for="review">Your Review:</label>
-            <textarea id="review" name="review" required></textarea>
+        <label for="rating">Rating:</label>
+        <select id="rating" name="rating" required>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
 
-            <!-- Rating selector -->
-            <label for="rating">Rating:</label>
-            <select id="rating" name="rating" required>
-                <option value="1">1 - ★☆☆☆☆</option>
-                <option value="2">2 - ★★☆☆☆</option>
-                <option value="3">3 - ★★★☆☆</option>
-                <option value="4">4 - ★★★★☆</option>
-                <option value="5">5 - ★★★★★</option>
-            </select>
+        <button type="submit" class="btn">Submit Review</button>
+      </form>
+    </section>
+  </main>
 
-            <!-- Submit button -->
-            <button type="submit">Submit Review</button>
-        </form>
-    </main>
+  <footer>
+    <p>All rights reserved</p>
+  </footer>
 
-    <footer>
-        <p>&copy; 2025 All Rights Reserved</p>
-    </footer>
-
-    <script src="scripts.js"></script>
+  <script src="scripts.js"></script>
 </body>
 </html>

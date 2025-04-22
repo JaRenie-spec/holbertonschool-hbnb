@@ -7,29 +7,40 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body id="index-page">
-  <header class="header">
+  <header>
     <img src="./images/logo.png" alt="Logo" class="logo">
-    <nav class="nav">
-      <a href="login.html" class="login-button">Login</a>
+    <nav>
+      <a href="login.html" class="login-button" id="login-link">Login</a>
+      <button id="logout-button" class="btn" style="display: none; margin-left: 1rem;">
+        Logout
+      </button>
     </nav>
   </header>
 
-  <main class="main">
-    <section id="filter" class="filter-section">
+  <main>
+    <section id="filter">
       <h2>Filter places by price</h2>
       <div class="filter-controls">
-        <label for="price-filter"></label>
-        <select id="price-filter" class="price-filter"></select>
+        <label for="price-filter">Max Price:</label>
+        <select id="price-filter">
+          <option value="All">All</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="150">150</option>
+          <option value="200">200</option>
+          <option value="250">250</option>
+          <option value="300">300</option>
+        </select>
       </div>
     </section>
 
-    <section id="places-list" class="places-list">
-      <!-- Liste des lieux, remplie dynamiquement -->
+    <section id="places-list">
+      
     </section>
   </main>
 
-  <footer class="footer">
-    <p>&copy; 2025 All Rights Reserved</p>
+  <footer>
+    <p>All rights reserved</p>
   </footer>
 
   <script src="scripts.js"></script>
